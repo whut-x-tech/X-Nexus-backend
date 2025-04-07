@@ -8,10 +8,10 @@
     <name>x-Nexus</name>
     <description>x-Nexus</description>
     <properties>
-        <java.version>1.8</java.version>
+        <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <spring-boot.version>2.6.13</spring-boot.version>
+        <spring-boot.version>3.2.0</spring-boot.version>
     </properties>
     <dependencies>
         <dependency>
@@ -57,14 +57,7 @@
                     <mainClass>tech.nexus.xnexus.XNexusApplication</mainClass>
                     <skip>true</skip>
                 </configuration>
-                <executions>
-                    <execution>
-                        <id>repackage</id>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
+
             </plugin>
         </plugins>
     </build>
