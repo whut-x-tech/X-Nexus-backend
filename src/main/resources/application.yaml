@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: x-nexus
+
+  # 读取远程配置
+  config:
+    import: 'nacos:'
+  cloud:
+    nacos:
+      config:
+        server-addr: 117.72.11.152:8848/x-nexus.yaml
+        namespace: 1865b411-c81b-4812-92b1-9425df7b36f2
+        group: backend
+        prefix: x-nexus
+        file-extension: yaml
+        username: x-nexus
+        password: x-nexus
