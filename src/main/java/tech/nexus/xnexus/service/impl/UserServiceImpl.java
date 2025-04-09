@@ -1,8 +1,9 @@
 package tech.nexus.xnexus.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.crypto.SecureUtil;
-import jakarta.annotation.Resource;
+import jakarta.annotation.PostConstruct;
 import lombok.AllArgsConstructor;
 import org.redisson.api.RRateLimiter;
 import org.redisson.api.RateIntervalUnit;
@@ -16,22 +17,28 @@ import tech.nexus.xnexus.constant.redis.UserRedisConstant;
 import tech.nexus.xnexus.exception.ThrowUtils;
 import tech.nexus.xnexus.mapper.UserMapper;
 import tech.nexus.xnexus.model.entity.User;
-import tech.nexus.xnexus.model.request.UserRegistryRequest;
+import tech.nexus.xnexus.model.request.user.UserLoginRequest;
+import tech.nexus.xnexus.model.request.user.UserRegistryRequest;
+import tech.nexus.xnexus.model.respose.user.UserLoginVo;
 import tech.nexus.xnexus.service.UserService;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author liuqiao
  * @since 2025-04-09
  */
 @Service
-@AllArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    private final StringRedisTemplate redisTemplate;
+    @Autowired
+    private StringRedisTemplate redisTemplate;
 
-    private final UserMapper userMapper;
+    @Autowired
+    private UserMapper userMapper;
 
-    private final RedissonClient redissonClient;
+    @Autowired
+    private RedissonClient redissonClient;
 
     @Override
     public Boolean register(UserRegistryRequest userRegistryRequest) {
@@ -40,10 +47,15 @@ public class UserServiceImpl implements UserService {
         final String checkCode = userRegistryRequest.getCheckCode();
 
         // 分布式限制注册接口
-        final RRateLimiter limiter = redissonClient.getRateLimiter(UserRedisConstant.REGISTRY_LOCK_PREFIX + username);
-        ThrowUtils.throwIf(!limiter.trySetRate(RateType.OVERALL, 1, UserRedisConstant.REGISTRY_LOCK_TTL, RateIntervalUnit.MILLISECONDS),
-                ErrorCode.FORBIDDEN_ERROR,
-                "短时间不能重复注册");
+        try {
+            ThrowUtils.throwIf(!redissonClient
+                            .getLock(UserRedisConstant.REGISTRY_LOCK_PREFIX + username)
+                            .tryLock(-1, UserRedisConstant.REGISTRY_LOCK_TTL, TimeUnit.MILLISECONDS),
+                    ErrorCode.FORBIDDEN_ERROR,
+                    "短时间不能重复注册");
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
 
         // 检查用户是否存在
         if (userMapper.isUserExist(username) == 1) {
@@ -59,5 +71,40 @@ public class UserServiceImpl implements UserService {
         // todo 设置 role
         return userMapper.addUser(user);
 
+    }
+
+    @Override
+    public UserLoginVo login(UserLoginRequest userLoginRequest) {
+        String username = userLoginRequest.getUsername();
+        String password = userLoginRequest.getPassword();
+        String checkCode = userLoginRequest.getCheckCode();
+
+        // todo 验证码检查
+
+        // 分布式限制登录频率
+        try {
+            ThrowUtils.throwIf(!redissonClient
+                            .getLock(UserRedisConstant.LOGIN_LOCK_PREFIX + username)
+                            .tryLock(-1, UserRedisConstant.LOGIN_LOCK_TTL, TimeUnit.MILLISECONDS),
+                    ErrorCode.FORBIDDEN_ERROR,
+                    "短时间不能重复登录");
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        // 检查用户帐号密码
+        final User user = userMapper.login(username, SecureUtil.md5(password));
+        ThrowUtils.throwIf(user == null, ErrorCode.PARAMS_ERROR, "用户不存在或者密码错误");
+
+        // 递增用户登录版本
+        @SuppressWarnings("all")
+        long version = redisTemplate.opsForValue().increment(UserRedisConstant.USER_LOGIN_VERSION_PREFIX + user.getId());
+
+        // 生成 jwt (带用户版本)
+        String jwt = "x" + version;
+
+        final UserLoginVo vo = BeanUtil.copyProperties(user, UserLoginVo.class);
+        vo.setJwt(jwt);
+        return vo;
     }
 }

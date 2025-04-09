@@ -1,4 +1,4 @@
-package tech.nexus.xnexus.model.request;
+package tech.nexus.xnexus.model.request.user;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;

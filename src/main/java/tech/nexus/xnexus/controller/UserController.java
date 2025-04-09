@@ -1,5 +1,6 @@
 package tech.nexus.xnexus.controller;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -8,8 +9,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import tech.nexus.xnexus.common.BaseResponse;
 import tech.nexus.xnexus.common.ResultUtils;
-import tech.nexus.xnexus.mapper.UserMapper;
-import tech.nexus.xnexus.model.request.UserRegistryRequest;
+import tech.nexus.xnexus.model.request.user.UserLoginRequest;
+import tech.nexus.xnexus.model.request.user.UserRegistryRequest;
+import tech.nexus.xnexus.model.respose.user.UserLoginVo;
 import tech.nexus.xnexus.service.UserService;
 
 /**
@@ -26,9 +28,15 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("register")
-    public BaseResponse<Boolean> register(@RequestBody @Validated UserRegistryRequest userRegistryRequest) {
+    public BaseResponse<Boolean> register(@RequestBody @Valid UserRegistryRequest userRegistryRequest) {
 
         return ResultUtils.success(userService.register(userRegistryRequest));
+    }
+
+    @PostMapping("login")
+    public BaseResponse<UserLoginVo> login(@RequestBody @Valid UserLoginRequest userLoginRequest) {
+        return ResultUtils.success(userService.login(userLoginRequest));
+
     }
 
 }
