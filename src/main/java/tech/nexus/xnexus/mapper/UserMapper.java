@@ -1,5 +1,7 @@
 package tech.nexus.xnexus.mapper;
 
+import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Select;
 import tech.nexus.xnexus.model.entity.User;
 
 /**
@@ -10,6 +12,11 @@ import tech.nexus.xnexus.model.entity.User;
 */
 public interface UserMapper {
 
+    @Select("select count(*) from x_nexus.t_user where username = #{username}")
+    int isUserExist(String username);
+
+    @Insert("insert into x_nexus.t_user(id, username, password) values (#{id}, #{username}, #{password})")
+    Boolean addUser(User user);
 }
 
 
