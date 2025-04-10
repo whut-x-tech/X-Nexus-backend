@@ -6,9 +6,11 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import tech.nexus.xnexus.interceptor.JwtResolveInterceptor;
+import tech.nexus.xnexus.interceptor.LoginSuccessInterceptor;
 
 /**
  * web mvc 相关配置
+ *
  * @author liuqiao
  * @since 2025-04-10
  */
@@ -23,6 +25,13 @@ public class WebConfig implements WebMvcConfigurer {
      */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(new JwtResolveInterceptor(redisTemplate));
+        registry.addInterceptor(new JwtResolveInterceptor(redisTemplate)).order(1);
+        registry.addInterceptor(new LoginSuccessInterceptor()).order(2).excludePathPatterns(
+                "/user/register",
+                "/user/login",
+
+                "/forum/get/*",
+                "/forum/page"
+        );
     }
 }
