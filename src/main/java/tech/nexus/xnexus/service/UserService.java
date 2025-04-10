@@ -1,9 +1,8 @@
 package tech.nexus.xnexus.service;
 
-import jakarta.validation.Valid;
 import tech.nexus.xnexus.model.request.user.UserLoginRequest;
 import tech.nexus.xnexus.model.request.user.UserRegistryRequest;
-import tech.nexus.xnexus.model.respose.user.UserLoginVo;
+import tech.nexus.xnexus.model.vo.user.UserLoginVo;
 
 /**
  * @author liuqiao
