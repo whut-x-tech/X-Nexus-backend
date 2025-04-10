@@ -3,25 +3,26 @@ package tech.nexus.xnexus.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.crypto.SecureUtil;
-import jakarta.annotation.PostConstruct;
-import lombok.AllArgsConstructor;
-import org.redisson.api.RRateLimiter;
-import org.redisson.api.RateIntervalUnit;
-import org.redisson.api.RateType;
+import cn.hutool.json.JSONUtil;
+import cn.hutool.jwt.JWTUtil;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import tech.nexus.xnexus.common.ErrorCode;
+import tech.nexus.xnexus.constant.encrypt.UserEncryptConstant;
 import tech.nexus.xnexus.constant.redis.UserRedisConstant;
 import tech.nexus.xnexus.exception.ThrowUtils;
 import tech.nexus.xnexus.mapper.UserMapper;
 import tech.nexus.xnexus.model.entity.User;
 import tech.nexus.xnexus.model.request.user.UserLoginRequest;
 import tech.nexus.xnexus.model.request.user.UserRegistryRequest;
-import tech.nexus.xnexus.model.respose.user.UserLoginVo;
+import tech.nexus.xnexus.model.vo.user.DistributedStorageUserVo;
+import tech.nexus.xnexus.model.vo.user.UserLoginVo;
 import tech.nexus.xnexus.service.UserService;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -75,9 +76,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserLoginVo login(UserLoginRequest userLoginRequest) {
-        String username = userLoginRequest.getUsername();
-        String password = userLoginRequest.getPassword();
-        String checkCode = userLoginRequest.getCheckCode();
+        final String username = userLoginRequest.getUsername();
+        final String password = userLoginRequest.getPassword();
+        final String checkCode = userLoginRequest.getCheckCode();
 
         // todo 验证码检查
 
@@ -101,7 +102,9 @@ public class UserServiceImpl implements UserService {
         long version = redisTemplate.opsForValue().increment(UserRedisConstant.USER_LOGIN_VERSION_PREFIX + user.getId());
 
         // 生成 jwt (带用户版本)
-        String jwt = "x" + version;
+        final DistributedStorageUserVo cacheUser = BeanUtil.copyProperties(user, DistributedStorageUserVo.class);
+        cacheUser.setVersion(version);
+        final String jwt = JWTUtil.createToken(Collections.singletonMap("user", cacheUser), UserEncryptConstant.JWT_KEY);
 
         final UserLoginVo vo = BeanUtil.copyProperties(user, UserLoginVo.class);
         vo.setJwt(jwt);
