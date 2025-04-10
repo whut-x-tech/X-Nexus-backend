@@ -1,4 +1,4 @@
-package tech.nexus.xnexus.model.respose.user;
+package tech.nexus.xnexus.model.vo.user;
 
 import lombok.Data;
 
