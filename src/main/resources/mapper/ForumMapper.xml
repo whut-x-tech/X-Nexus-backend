@@ -5,13 +5,13 @@
 <mapper namespace="tech.nexus.xnexus.mapper.ForumMapper">
 
     <resultMap id="BaseResultMap" type="tech.nexus.xnexus.model.entity.Forum">
-            <id property="id" column="id" jdbcType="BIGINT"/>
-            <result property="title" column="title" jdbcType="VARCHAR"/>
-            <result property="content" column="content" jdbcType="VARCHAR"/>
-            <result property="userId" column="user_id" jdbcType="BIGINT"/>
-            <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
-            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
-            <result property="isDelete" column="is_delete" jdbcType="TINYINT"/>
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="title" column="title" jdbcType="VARCHAR"/>
+        <result property="content" column="content" jdbcType="VARCHAR"/>
+        <result property="userId" column="user_id" jdbcType="BIGINT"/>
+        <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="isDelete" column="is_delete" jdbcType="TINYINT"/>
     </resultMap>
 
     <sql id="Base_Column_List">
@@ -19,4 +19,69 @@
         user_id,update_time,create_time,
         is_delete
     </sql>
+
+    <update id="updateForum">
+        update x_nexus.t_forum
+        <set>
+            <!-- 当title字段非null时生成 -->
+            <if test="title != null">
+                title = #{title},
+            </if>
+            <!-- 当content字段非null时生成 -->
+            <if test="content != null">
+                content = #{content},
+            </if>
+        </set>
+        WHERE id = #{id}  <!-- id是@NotNull的必填字段 -->
+    </update>
+
+    <select id="pageForum" resultType="tech.nexus.xnexus.model.entity.Forum">
+        SELECT * FROM x_nexus.t_forum
+        <where>
+            <if test="forum.title != null and forum.title != ''">
+                AND title LIKE CONCAT('%', #{forum.title}, '%')
+            </if>
+            <if test="forum.content != null and forum.content != ''">
+                AND content LIKE CONCAT('%', #{forum.content}, '%')
+            </if>
+            <if test="forum.userId != null">
+                AND user_id = #{forum.userId}
+            </if>
+            <if test="forum.updateTime != null">
+                AND update_time = #{forum.updateTime}
+            </if>
+            <if test="forum.createTime != null">
+                AND create_time = #{forum.createTime}
+            </if>
+        </where>
+        <if test="forum.fieldList != null and forum.fieldList.size() > 0">
+            ORDER BY
+            <foreach collection="forum.fieldList" item="field" index="index" separator=",">
+                ${field} ${forum.orderList[index]}
+            </foreach>
+        </if>
+        <!-- 使用您指定的offset参数 -->
+        LIMIT #{forum.pageSize} OFFSET #{offset}
+    </select>
+
+    <select id="countForum" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM x_nexus.t_forum
+        <where>
+            <if test="title != null and title != ''">
+                AND title LIKE CONCAT('%', #{title}, '%')
+            </if>
+            <if test="content != null and content != ''">
+                AND content LIKE CONCAT('%', #{content}, '%')
+            </if>
+            <if test="userId != null">
+                AND user_id = #{userId}
+            </if>
+            <if test="updateTime != null">
+                AND update_time = #{updateTime}
+            </if>
+            <if test="createTime != null">
+                AND create_time = #{createTime}
+            </if>
+        </where>
+    </select>
 </mapper>
